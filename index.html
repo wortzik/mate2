@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sopa de letras de Mate II</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#E9EFF1; --paper:#FBFCFC; --ink:#17202B; --muted:#566475; --line:#C5D4E0;
+  --marker:#2466D8; --hl:#FFD43B; --brick:#A8432B; --ok:#1B7F54; --chip:#DCE6EC;
+  --hand:'Caveat','Segoe Print','Bradley Hand',cursive;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#101A16; --paper:#17251F; --ink:#EAF1EC; --muted:#9CB0A5; --line:#2D4239;
+    --marker:#8DB8FF; --hl:#C9A91F; --brick:#E48468; --ok:#6FD3A4; --chip:#22352D;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101A16; --paper:#17251F; --ink:#EAF1EC; --muted:#9CB0A5; --line:#2D4239;
+  --marker:#8DB8FF; --hl:#C9A91F; --brick:#E48468; --ok:#6FD3A4; --chip:#22352D;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+h1{font-family:var(--hand);font-weight:700;font-size:clamp(2.4rem,9vw,3.6rem);line-height:.95;margin:6px 0 2px;letter-spacing:.01em}
+.sub{margin:0 0 14px;color:var(--muted);max-width:60ch}
+h2{font-family:var(--hand);font-weight:700;font-size:1.9rem;margin:22px 0 6px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--marker);outline-offset:2px}
+.tabs{display:flex;gap:6px;border-bottom:2px solid var(--ink);margin-bottom:14px}
+.tabs button{background:transparent;border:2px solid transparent;border-bottom:0;padding:8px 14px;border-radius:10px 10px 0 0;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--paper);border-color:var(--ink);color:var(--ink);position:relative;top:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:0 0 10px}
+.row .lbl{font-weight:600;margin-right:2px}
+.chip{background:var(--chip);border:2px solid transparent;border-radius:999px;padding:5px 12px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--paper);border-color:var(--ink)}
+select{background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:5px 8px}
+.btn{background:var(--ink);color:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:7px 14px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink)}
+.status{display:flex;gap:18px;align-items:baseline;font-weight:600;margin:6px 0 8px}
+.status .big{font-family:var(--mono);font-size:1.25rem}
+.play{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.play>*{min-width:0}
+@media (min-width:860px){.play{grid-template-columns:minmax(0,560px) minmax(0,1fr);align-items:start}}
+.board{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:6px;touch-action:none;user-select:none;-webkit-user-select:none;
+  display:grid;grid-template-columns:repeat(var(--n),1fr);aspect-ratio:1;width:100%;max-width:560px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:calc(100%/var(--n)) calc(100%/var(--n));cursor:crosshair}
+.board svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:clamp(11px,3.4vw,19px);pointer-events:none}
+.cell.anchor{color:var(--marker)}
+.clues{list-style:none;margin:0;padding:0;columns:2;column-gap:18px}
+@media (min-width:860px){.clues{columns:1}}
+.clues li{break-inside:avoid;padding:4px 0;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
+.clues li.found{color:var(--muted)}
+.clues li.found .c{text-decoration:line-through}
+.clues .a{font-family:var(--hand);font-weight:700;font-size:1.25rem;color:var(--ok);display:block;line-height:1.1}
+.clues li.missed .a{color:var(--brick)}
+.note{color:var(--muted);font-size:.93rem;margin:8px 0 0;max-width:62ch}
+.done{background:var(--paper);border:2px solid var(--ok);border-radius:8px;padding:10px 12px;margin:10px 0;font-weight:600}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:18px 16px;max-width:560px}
+.prompt{font-family:var(--hand);font-weight:700;font-size:clamp(2rem,8vw,2.8rem);line-height:1.05;margin:2px 0 12px}
+.card input{width:100%;background:var(--bg);border:2px solid var(--ink);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:1.1rem;text-transform:uppercase}
+.fb{min-height:1.6em;margin:10px 0;font-weight:600}
+.fb.ok{color:var(--ok)} .fb.no{color:var(--brick)}
+.fb .w{font-family:var(--mono);letter-spacing:.08em}
+.tblwrap{overflow-x:auto;background:var(--paper);border:2px solid var(--ink);border-radius:8px;max-width:620px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600}
+td:last-child{font-family:var(--mono);font-weight:500}
+tr:last-child td{border-bottom:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sopa de letras</h1>
+  <p class="sub">Vocabulario de Mate II en español e inglés, para practicar antes de la actividad en parejas.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-view="sopa" aria-selected="true">Sopa</button>
+    <button role="tab" data-view="deletreo" aria-selected="false">Deletreo</button>
+    <button role="tab" data-view="glosario" aria-selected="false">Glosario</button>
+  </div>
+
+  <div class="row" id="cats">
+    <span class="lbl">Temas</span>
+    <button class="chip" data-cat="calc" aria-pressed="true">Cálculo</button>
+    <button class="chip" data-cat="trig" aria-pressed="true">Trigonometría</button>
+    <button class="chip" data-cat="econ" aria-pressed="true">Economía</button>
+  </div>
+
+  <section id="view-sopa">
+    <div class="row">
+      <label class="lbl" for="lang">Palabras escondidas en</label>
+      <select id="lang"><option value="en">inglés</option><option value="es">español</option></select>
+      <label class="lbl" for="dirs">Direcciones</label>
+      <select id="dirs"><option value="8">8, con palabras al revés</option><option value="4">4, sin palabras al revés</option></select>
+    </div>
+    <div class="row">
+      <button class="btn" id="new">Nueva sopa</button>
+      <button class="btn ghost" id="reveal">Ver respuestas</button>
+    </div>
+    <div class="status"><span class="big" id="timer">0:00</span><span id="count"></span><span id="best"></span></div>
+    <div class="done" id="done" hidden></div>
+    <div class="play">
+      <div>
+        <div class="board" id="board" aria-label="Sopa de letras"></div>
+        <p class="note">Arrastra de la primera a la última letra. También puedes tocar la primera letra y después la última.</p>
+      </div>
+      <ul class="clues" id="clues"></ul>
+    </div>
+  </section>
+
+  <section id="view-deletreo" hidden>
+    <div class="row">
+      <label class="lbl" for="way">Escribir en</label>
+      <select id="way"><option value="en">inglés</option><option value="es">español</option></select>
+      <button class="btn ghost" id="restart">Empezar de nuevo</button>
+    </div>
+    <div class="status"><span id="left"></span><span id="streak"></span></div>
+    <div class="card" id="card">
+      <div class="prompt" id="prompt"></div>
+      <input id="answer" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Tu respuesta">
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <button class="btn" id="check">Comprobar</button>
+    </div>
+    <p class="note">En la sopa una letra mal escrita te impide encontrar la palabra. Las que falles vuelven a salir hasta que las escribas bien.</p>
+  </section>
+
+  <section id="view-glosario" hidden>
+    <div id="gloss"></div>
+  </section>
+</div>
+
+<script>
+// ---------- Datos ----------
+const T = [
+ ['Álgebra','Algebra','calc'],['Asíntota','Asymptote','calc'],['Eje','Axis','calc'],['Corolario','Corollary','calc'],
+ ['Dominio','Domain','calc'],['Ecuación','Equation','calc'],['Exponencial','Exponential','calc'],['Función','Function','calc'],
+ ['Gráfica','Graph','calc'],['Logaritmo','Logarithm','calc'],['Teorema','Theorem','calc'],
+ ['Teorema del valor medio','Mean value theorem','calc'],['Oblicua','Oblique','calc'],['Paramétrica','Parametric','calc'],
+ ['Cuadrante','Quadrant','calc'],['Simetría','Symmetry','calc'],['Concavidad','Concavity','calc'],
+ ['Punto crítico','Critical point','calc'],['Punto de inflexión','Inflection point','calc'],
+ ['Decrecimiento','Decrease','calc'],['Crecimiento','Increase','calc'],['Derivada','Derivative','calc'],
+ ['Derivar','Differentiate','calc'],['Límite','Limit','calc'],['Optimización','Optimization','calc'],
+ ['Regla de la cadena','Chain rule','calc'],['Regla de la potencia','Power rule','calc'],
+ ['Regla del producto','Product rule','calc'],['Regla del cociente','Quotient rule','calc'],
+ ['Regla de L’Hôpital','L’Hôpital’s rule','calc'],['Pendiente','Slope','calc'],['Tangente','Tangent','calc'],
+ ['Aceleración','Acceleration','calc'],['Velocidad','Velocity','calc'],['Máximo','Maximum','calc'],['Mínimo','Minimum','calc'],
+ ['Continuidad','Continuity','calc'],['Intervalo','Interval','calc'],['Cóncava','Concave','calc'],['Convexa','Convex','calc'],
+ ['Razón de cambio','Rate of change','calc'],['Diferencial','Differential','calc'],['Cociente','Quotient','calc'],
+ ['Raíz','Root','calc'],['Constante','Constant','calc'],['Monotonía','Monotonicity','calc'],
+ ['Seno','Sine','trig'],['Coseno','Cosine','trig'],['Arcoseno','Arcsine','trig'],['Arcocoseno','Arccosine','trig'],
+ ['Arcotangente','Arctangent','trig'],['Trigonometría','Trigonometry','trig'],['Ángulo','Angle','trig'],
+ ['Secante','Secant','trig'],['Radián','Radian','trig'],
+ ['Adam Smith','Adam Smith','econ'],['Capital','Capital','econ'],['Dinero','Money','econ'],['Efectivo','Cash','econ'],
+ ['Consumidor','Consumer','econ'],['Crédito','Credit','econ'],['Débito','Debit','econ'],['Deuda','Debt','econ'],
+ ['Déficit','Deficit','econ'],['Depósito','Deposit','econ'],['Finanzas','Finance','econ'],['Fondo','Fund','econ'],
+ ['Ganancia o beneficio','Profit','econ'],['Ingreso','Revenue','econ',['Income']],['Inflación','Inflation','econ'],
+ ['Invertir','Invest','econ'],['Inversión','Investment','econ'],['Pérdida','Loss','econ'],
+ ['Análisis marginal','Marginal analysis','econ'],['Mercado','Market','econ'],['Recesión','Recession','econ'],
+ ['Riesgo','Risk','econ'],['Ahorro','Savings','econ',['Saving']],['Impuesto','Tax','econ'],['Comercio','Trade','econ',['Commerce']],
+ ['Valor','Value','econ'],['Costo','Cost','econ'],['Costo marginal','Marginal cost','econ'],
+ ['Costo promedio','Average cost','econ'],['Demanda','Demand','econ'],['Oferta','Supply','econ'],['Precio','Price','econ'],
+ ['Presupuesto','Budget','econ'],['Riqueza','Wealth','econ'],['Interés','Interest','econ'],['Escasez','Scarcity','econ']
+].map(a=>({es:a[0],en:a[1],cat:a[2],alt:a[3]||[]}));
+const CATS={calc:'Cálculo',trig:'Trigonometría',econ:'Economía'};
+const N=15, PER=12;
+
+// ---------- Lógica pura ----------
+function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function buildPuzzle(cats,lang,ndirs){
+  const seen=new Set();
+  let pool=T.filter(t=>cats.has(t.cat)).map(t=>lang==='en'?{clue:t.es,ans:t.en}:{clue:t.en,ans:t.es})
+    .map(o=>({clue:o.clue,ans:o.ans,key:norm(o.ans)}))
+    .filter(o=>o.key.length>=3&&o.key.length<=N&&!seen.has(o.key)&&seen.add(o.key));
+  pool=shuffle(pool);
+  const D=ndirs===8?[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]]:[[0,1],[1,0],[1,1],[-1,1]];
+  const g=Array.from({length:N},()=>Array(N).fill(''));
+  const words=[];
+  for(const w of pool){
+    if(words.length>=PER)break;
+    let placed=false;
+    for(let k=0;k<400&&!placed;k++){
+      const [dr,dc]=D[Math.floor(Math.random()*D.length)];
+      const L=w.key.length;
+      const r=Math.floor(Math.random()*N), c=Math.floor(Math.random()*N);
+      const er=r+dr*(L-1), ec=c+dc*(L-1);
+      if(er<0||er>=N||ec<0||ec>=N)continue;
+      let ok=true;
+      for(let i=0;i<L;i++){const ch=g[r+dr*i][c+dc*i];if(ch&&ch!==w.key[i]){ok=false;break;}}
+      if(!ok)continue;
+      for(let i=0;i<L;i++)g[r+dr*i][c+dc*i]=w.key[i];
+      words.push({clue:w.clue,ans:w.ans,key:w.key,r,c,er,ec,found:false,line:null});
+      placed=true;
+    }
+  }
+  const letters=words.map(w=>w.key).join('')||'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!g[r][c])g[r][c]=letters[Math.floor(Math.random()*letters.length)];
+  words.sort((a,b)=>a.clue.localeCompare(b.clue,'es'));
+  return {g,words};
+}
+function snap(a,b){
+  let dx=b.c-a.c, dy=b.r-a.r; const ax=Math.abs(dx), ay=Math.abs(dy);
+  if(ax===0&&ay===0)return {r:a.r,c:a.c};
+  let sx=Math.sign(dx), sy=Math.sign(dy), len;
+  if(ax>=2*ay){sy=0;len=ax;}else if(ay>=2*ax){sx=0;len=ay;}else{len=Math.max(ax,ay);}
+  while(len>0){const r=a.r+sy*len,c=a.c+sx*len;if(r>=0&&r<N&&c>=0&&c<N)break;len--;}
+  return {r:a.r+sy*len,c:a.c+sx*len};
+}
+function readLine(g,a,b){
+  const sy=Math.sign(b.r-a.r), sx=Math.sign(b.c-a.c), len=Math.max(Math.abs(b.r-a.r),Math.abs(b.c-a.c));
+  let s='';for(let i=0;i<=len;i++)s+=g[a.r+sy*i][a.c+sx*i];return s;
+}
+
+// ---------- Interfaz ----------
+if(typeof document!=='undefined'){
+const $=id=>document.getElementById(id);
+const cats=new Set(['calc','trig','econ']);
+let P=null, anchor=null, dragging=false, moved=false, cur=null, t0=0, tick=null, over=false;
+
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function bestKey(){return 'sopa-mejor-'+$('lang').value+'-'+$('dirs').value;}
+function showBest(){let b=null;try{b=localStorage.getItem(bestKey());}catch(e){}$('best').textContent=b?'Tu mejor tiempo: '+fmt(+b):'';}
+function newPuzzle(){
+  P=buildPuzzle(cats,$('lang').value,+$('dirs').value);
+  anchor=null;dragging=false;over=false;$('done').hidden=true;
+  const b=$('board');b.style.setProperty('--n',N);b.innerHTML='';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+N+' '+N);svg.setAttribute('preserveAspectRatio','none');svg.id='ink';b.appendChild(svg);
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const d=document.createElement('div');d.className='cell';d.id='c'+r+'_'+c;d.textContent=P.g[r][c];b.appendChild(d);}
+  clearInterval(tick);t0=Date.now();$('timer').textContent='0:00';
+  tick=setInterval(()=>{$('timer').textContent=fmt(Math.floor((Date.now()-t0)/1000));},500);
+  draw();showBest();
+}
+function line(a,b,color,op){
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',a.c+.5);l.setAttribute('y1',a.r+.5);l.setAttribute('x2',b.c+.5);l.setAttribute('y2',b.r+.5);
+  l.setAttribute('stroke',color);l.setAttribute('stroke-width','.74');l.setAttribute('stroke-linecap','round');l.setAttribute('opacity',op);
+  return l;
+}
+function draw(){
+  const svg=$('ink');svg.innerHTML='';
+  for(const w of P.words){
+    if(w.found)svg.appendChild(line(w.line.a,w.line.b,'var(--hl)','.6'));
+    else if(over)svg.appendChild(line({r:w.r,c:w.c},{r:w.er,c:w.ec},'var(--brick)','.4'));
+  }
+  if(anchor&&cur&&dragging&&moved)svg.appendChild(line(anchor,snap(anchor,cur),'var(--marker)','.4'));
+  document.querySelectorAll('.cell.anchor').forEach(e=>e.classList.remove('anchor'));
+  if(anchor){const e=$('c'+anchor.r+'_'+anchor.c);if(e)e.classList.add('anchor');}
+  const ul=$('clues');ul.innerHTML='';
+  for(const w of P.words){
+    const li=document.createElement('li');
+    const c=document.createElement('span');c.className='c';c.textContent=w.clue;li.appendChild(c);
+    if(w.found||over){const a=document.createElement('span');a.className='a';a.textContent=w.ans.toUpperCase();li.appendChild(a);li.className=w.found?'found':'missed';}
+    ul.appendChild(li);
+  }
+  const f=P.words.filter(w=>w.found).length;
+  $('count').textContent=f+' de '+P.words.length+' encontradas';
+}
+function cellAt(e){
+  const r=$('board').getBoundingClientRect();
+  const c=Math.min(N-1,Math.max(0,Math.floor((e.clientX-r.left)/r.width*N)));
+  const row=Math.min(N-1,Math.max(0,Math.floor((e.clientY-r.top)/r.height*N)));
+  return {r:row,c};
+}
+function attempt(a,bRaw){
+  const b=snap(a,bRaw);
+  const s=readLine(P.g,a,b), rev=s.split('').reverse().join('');
+  const w=P.words.find(x=>!x.found&&(x.key===s||x.key===rev));
+  if(w){w.found=true;w.line={a,b};
+    if(P.words.every(x=>x.found)){
+      clearInterval(tick);const secs=Math.floor((Date.now()-t0)/1000);$('timer').textContent=fmt(secs);
+      let b0=null;try{b0=localStorage.getItem(bestKey());if(!b0||secs<+b0)localStorage.setItem(bestKey(),secs);}catch(e){}
+      $('done').textContent='Encontraste las '+P.words.length+' palabras en '+fmt(secs)+'. Pulsa «Nueva sopa» para otra ronda.';$('done').hidden=false;over=true;showBest();
+    }
+  }
+}
+const board=$('board');
+board.addEventListener('pointerdown',e=>{
+  if(over||!P)return;e.preventDefault();
+  const p=cellAt(e);
+  if(anchor&&!dragging){
+    if(anchor.r===p.r&&anchor.c===p.c){anchor=null;}else{attempt(anchor,p);anchor=null;}
+    draw();return;
+  }
+  anchor=p;cur=p;dragging=true;moved=false;
+  try{board.setPointerCapture(e.pointerId);}catch(err){}
+  draw();
+});
+board.addEventListener('pointermove',e=>{
+  if(!dragging)return;const p=cellAt(e);
+  if(p.r!==cur.r||p.c!==cur.c){cur=p;if(p.r!==anchor.r||p.c!==anchor.c)moved=true;draw();}
+});
+function endDrag(){
+  if(!dragging)return;dragging=false;
+  if(moved&&(cur.r!==anchor.r||cur.c!==anchor.c)){attempt(anchor,cur);anchor=null;}
+  draw();
+}
+board.addEventListener('pointerup',endDrag);
+board.addEventListener('pointercancel',()=>{dragging=false;anchor=null;draw();});
+$('new').addEventListener('click',newPuzzle);
+$('lang').addEventListener('change',newPuzzle);
+$('dirs').addEventListener('change',newPuzzle);
+$('reveal').addEventListener('click',()=>{if(!P||over)return;over=true;clearInterval(tick);anchor=null;draw();
+  const f=P.words.filter(w=>w.found).length;$('done').textContent='Encontraste '+f+' de '+P.words.length+'. Las que faltaban están marcadas en la sopa.';$('done').hidden=false;});
+
+// ----- Deletreo -----
+let deck=[], misses=0, streak=0, waiting=false;
+function buildDeck(){
+  const way=$('way').value;
+  deck=shuffle(T.filter(t=>cats.has(t.cat)&&norm(t.es)!==norm(t.en)).map(t=>way==='en'
+    ?{q:t.es,a:t.en,ok:[t.en].concat(t.alt).map(norm)}:{q:t.en,a:t.es,ok:[norm(t.es)].concat(t.es.split(' o ').map(norm))}));
+  misses=0;streak=0;waiting=false;showCard();
+}
+function showCard(){
+  $('answer').value='';$('fb').textContent='';$('fb').className='fb';$('check').textContent='Comprobar';waiting=false;
+  if(!deck.length){
+    $('prompt').textContent='Terminaste';$('answer').hidden=true;$('check').hidden=true;
+    $('fb').className='fb ok';$('fb').textContent=misses?'Escribiste bien todas las palabras, con '+misses+' fallos en el camino. Repite hasta que salga en cero.':'Todas bien y sin un solo fallo.';
+    $('left').textContent='';$('streak').textContent='';return;
+  }
+  $('answer').hidden=false;$('check').hidden=false;
+  $('prompt').textContent=deck[0].q;
+  $('left').textContent='Quedan '+deck.length;
+  $('streak').textContent='Seguidas bien: '+streak;
+  $('answer').focus({preventScroll:true});
+}
+function check(){
+  if(!deck.length)return;
+  if(waiting){showCard();return;}
+  const card=deck[0], v=norm($('answer').value);
+  if(!v)return;
+  if(card.ok.includes(v)){deck.shift();streak++;$('fb').className='fb ok';$('fb').textContent='Correcto.';}
+  else{misses++;streak=0;deck.shift();deck.splice(Math.min(3,deck.length),0,card);
+    $('fb').className='fb no';$('fb').innerHTML='';
+    $('fb').append('Se escribe ');const s=document.createElement('span');s.className='w';s.textContent=card.a.toUpperCase();$('fb').append(s,'. Vuelve a salir en un momento.');}
+  waiting=true;$('check').textContent='Siguiente';
+}
+$('check').addEventListener('click',check);
+$('answer').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();}});
+$('restart').addEventListener('click',buildDeck);
+$('way').addEventListener('change',buildDeck);
+
+// ----- Glosario -----
+function gloss(){
+  const g=$('gloss');g.innerHTML='';
+  for(const k of Object.keys(CATS)){
+    const h=document.createElement('h2');h.textContent=CATS[k];g.appendChild(h);
+    const wrap=document.createElement('div');wrap.className='tblwrap';
+    const tb=document.createElement('table');tb.innerHTML='<thead><tr><th>Español</th><th>Inglés</th></tr></thead>';
+    const body=document.createElement('tbody');
+    T.filter(t=>t.cat===k).sort((a,b)=>a.es.localeCompare(b.es,'es')).forEach(t=>{
+      const tr=document.createElement('tr');const a=document.createElement('td');a.textContent=t.es;
+      const b=document.createElement('td');b.textContent=t.en.toUpperCase()+(t.alt.length?' / '+t.alt.join(' / ').toUpperCase():'');
+      tr.append(a,b);body.appendChild(tr);});
+    tb.appendChild(body);wrap.appendChild(tb);g.appendChild(wrap);
+  }
+}
+
+// ----- Temas y pestañas -----
+document.querySelectorAll('#cats .chip').forEach(ch=>ch.addEventListener('click',()=>{
+  const k=ch.dataset.cat;
+  if(cats.has(k)){if(cats.size===1)return;cats.delete(k);}else cats.add(k);
+  ch.setAttribute('aria-pressed',cats.has(k));newPuzzle();buildDeck();
+}));
+const VIEWS=['sopa','deletreo','glosario'];
+function route(){
+  let v=(location.hash||'').replace('#','');if(!VIEWS.includes(v))v='sopa';
+  VIEWS.forEach(n=>{$('view-'+n).hidden=n!==v;});
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
+  $('cats').hidden=v==='glosario';
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  try{location.hash=b.dataset.view;}catch(e){}
+  VIEWS.forEach(n=>{$('view-'+n).hidden=n!==b.dataset.view;});
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $('cats').hidden=b.dataset.view==='glosario';
+}));
+window.addEventListener('hashchange',route);
+newPuzzle();buildDeck();gloss();route();
+}
+if(typeof module!=='undefined')module.exports={T,norm,buildPuzzle,snap,readLine,N,PER};
+</script>
+</body>
+</html>
